@@ -1,0 +1,108 @@
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class FarmingSimulator3D : MonoBehaviour
+{
+    [Header("--- CONFIGURAÇÕES DO TERRENO REAL ---")]
+    public Terrain realTerrain;
+    public int gridWidth = 100;
+    public int gridLength = 100;
+    private SoilTile[,] soilGrid;
+
+    [Header("--- CONFIGURAÇÕES DA SOJA ---")]
+    public GameObject soyPrefab; // Arraste um modelo 3D de planta de soja aqui
+    public float growthSpeed = 0.05f; // Velocidade do crescimento
+
+    [Header("--- VEÍCULO (COLHEDEIRA 3D) ---")]
+    public Transform combineHarvester;
+    public float vehicleSpeed = 10f;
+    public float turnSpeed = 50f;
+    public float headerWidth = 5.0f; // Largura da plataforma de corte
+
+    [Header("--- SISTEMA DE ARMAZENAMENTO ---")]
+    public float currentSoyInTank = 0f;
+    public float tankCapacity = 10000f; // Litros/Quilos
+
+    // Enum para controlar os estados de cada pedaço do terreno
+    public enum SoilState { Dry, Fertilized, Planted, ReadyToHarvest, Harvested }
+
+    public class SoilTile
+    {
+        public Vector3 worldPosition;
+        public SoilState state;
+        public float growthProgress;
+        public GameObject soyInstance;
+    }
+
+    void Start()
+    {
+        InitializeRealTerrainGrid();
+    }
+
+    void Update()
+    {
+        HandleVehicleMovement();
+        UpdateCropGrowth();
+        SimulateHarvesting();
+    }
+
+    // 1. MAPEAMENTO DO TERRENO REAIS
+    void InitializeRealTerrainGrid()
+    {
+        soilGrid = new SoilTile[gridWidth, gridLength];
+        Vector3 terrainSize = realTerrain.terrainData.size;
+
+        for (int x = 0; x = 1f)
+                    {
+                        tile.state = SoilState.ReadyToHarvest;
+                        // Opcional: Mudar cor do Prefab para amarelo/marrom (soja madura)
+                        ChangeCropColor(tile.soyInstance, Color.yellow);
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. MECÂNICA DE COLHEITA POR PROXIMIDADE
+    void SimulateHarvesting()
+    {
+        if (combineHarvester == null) return;
+
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int z = 0; z < gridLength; z++)
+            {
+                SoilTile tile = soilGrid[x, z];
+                if (tile.state == SoilState.ReadyToHarvest)
+                {
+                    // Verifica a distância entre a plataforma da colhedeira e a planta
+                    float distance = Vector3.Distance(combineHarvester.position, tile.worldPosition);
+                    
+                    if (distance <= headerWidth && currentSoyInTank < tankCapacity)
+                    {
+                        tile.state = SoilState.Harvested;
+                        currentSoyInTank += 10f; // Adiciona grãos ao tanque
+                        
+                        // Destrói ou esconde o modelo 3D da planta colhida
+                        if (tile.soyInstance != null)
+                        {
+                            Destroy(tile.soyInstance);
+                        }
+                        
+                        Debug.Log($"Soja Colhida! Tanque: {currentSoyInTank}/{tankCapacity} kg");
+                    }
+                }
+            }
+        }
+    }
+
+    void ChangeCropColor(GameObject crop, Color color)
+    {
+        Renderer[] renderers = crop.GetComponentsInChildren<Renderer>();
+        foreach (Renderer r in renderers)
+        {
+            r.material.color = color;
+        }
+    }
+}
